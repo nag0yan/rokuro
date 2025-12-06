@@ -77,8 +77,13 @@
     <div class="controls">
       <div class="control-group">
         <label for="speed">回転速度:</label>
-        <input type="range" id="speed" min="0" max="50" value="0" step="1">
-        <span class="speed-value" id="speedValue">0</span>
+        <input type="range" id="speed" min="0" max="50" value="1" step="1">
+        <span class="speed-value" id="speedValue">1</span>
+      </div>
+      <div class="control-group">
+        <label for="lineWidth">線の太さ:</label>
+        <input type="range" id="lineWidth" min="1" max="20" value="10" step="1">
+        <span class="speed-value" id="lineWidthValue">10</span>
       </div>
     </div>
   </main>
@@ -93,13 +98,14 @@ let isDrawing = false;
 let lastX = 0;
 let lastY = 0;
 let rotation = 0;
-let rotationSpeed = 0; // 初期回転速度（停止状態）
+let rotationSpeed = 0.05; // 初期回転速度（1 * 0.05）
+let lineWidth = 10; // 初期線の太さ
 
-// 描画パスを保存する配列
+// 描画パスを保存する配列（線の太さも保存）
 const paths = [];
 let currentPath = [];
 
-// スライダーのイベントリスナー
+// 回転速度スライダー
 const speedSlider = document.getElementById("speed");
 const speedValue = document.getElementById("speedValue");
 
@@ -108,6 +114,16 @@ speedSlider.addEventListener("input", (e) => {
   speedValue.textContent = value;
   rotationSpeed = value * 0.05; // 0-2.5の範囲に変換
   console.log("Speed changed to:", value, "rotationSpeed:", rotationSpeed);
+});
+
+// 線の太さスライダー
+const lineWidthSlider = document.getElementById("lineWidth");
+const lineWidthValue = document.getElementById("lineWidthValue");
+
+lineWidthSlider.addEventListener("input", (e) => {
+  const value = parseInt(e.target.value);
+  lineWidthValue.textContent = value;
+  lineWidth = value;
 });
 
 // 座標取得（マウスとタッチ両対応）
@@ -153,7 +169,10 @@ function startDrawing(e) {
   const original = getOriginalPosition(pos.x, pos.y);
   lastX = pos.x;
   lastY = pos.y;
-  currentPath = [{ x: original.x, y: original.y }];
+  currentPath = {
+    points: [{ x: original.x, y: original.y }],
+    lineWidth: lineWidth
+  };
   e.preventDefault();
 }
 
@@ -163,7 +182,7 @@ function drawLine(e) {
 
   const pos = getPosition(e);
   const original = getOriginalPosition(pos.x, pos.y);
-  currentPath.push({ x: original.x, y: original.y });
+  currentPath.points.push({ x: original.x, y: original.y });
 
   lastX = pos.x;
   lastY = pos.y;
@@ -172,9 +191,9 @@ function drawLine(e) {
 
 // 描画終了
 function stopDrawing() {
-  if (isDrawing && currentPath.length > 0) {
-    paths.push([...currentPath]);
-    currentPath = [];
+  if (isDrawing && currentPath.points && currentPath.points.length > 0) {
+    paths.push({ ...currentPath, points: [...currentPath.points] });
+    currentPath = { points: [], lineWidth: lineWidth };
   }
   isDrawing = false;
 }
@@ -198,28 +217,29 @@ function animate() {
   ctx.translate(-150, -150); // 元に戻す
 
   ctx.strokeStyle = "#333";
-  ctx.lineWidth = 2;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
 
   // 保存されたパスを描画
   paths.forEach(path => {
-    if (path.length > 1) {
+    if (path.points && path.points.length > 1) {
+      ctx.lineWidth = path.lineWidth;
       ctx.beginPath();
-      ctx.moveTo(path[0].x, path[0].y);
-      for (let i = 1; i < path.length; i++) {
-        ctx.lineTo(path[i].x, path[i].y);
+      ctx.moveTo(path.points[0].x, path.points[0].y);
+      for (let i = 1; i < path.points.length; i++) {
+        ctx.lineTo(path.points[i].x, path.points[i].y);
       }
       ctx.stroke();
     }
   });
 
   // 現在描画中のパスを描画
-  if (currentPath.length > 1) {
+  if (currentPath.points && currentPath.points.length > 1) {
+    ctx.lineWidth = currentPath.lineWidth;
     ctx.beginPath();
-    ctx.moveTo(currentPath[0].x, currentPath[0].y);
-    for (let i = 1; i < currentPath.length; i++) {
-      ctx.lineTo(currentPath[i].x, currentPath[i].y);
+    ctx.moveTo(currentPath.points[0].x, currentPath.points[0].y);
+    for (let i = 1; i < currentPath.points.length; i++) {
+      ctx.lineTo(currentPath.points[i].x, currentPath.points[i].y);
     }
     ctx.stroke();
   }
