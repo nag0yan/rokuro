@@ -376,6 +376,11 @@ function animate() {
   ctx.rotate(rotation); // 回転
   ctx.translate(-150, -150); // 元に戻す
 
+  // 円の領域でクリッピング
+  ctx.beginPath();
+  ctx.arc(150, 150, 100, 0, Math.PI * 2);
+  ctx.clip();
+
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
 
