@@ -68,6 +68,31 @@
         font-size: 14px;
         color: #333;
       }
+
+      .color-palette {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .color-button {
+        width: 32px;
+        height: 32px;
+        border: 3px solid transparent;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: transform 0.2s, border-color 0.2s;
+      }
+
+      .color-button:hover {
+        transform: scale(1.1);
+      }
+
+      .color-button.active {
+        border-color: #333;
+        transform: scale(1.15);
+      }
     </style>
 </head>
 <body>
@@ -85,6 +110,10 @@
         <input type="range" id="lineWidth" min="1" max="20" value="10" step="1">
         <span class="speed-value" id="lineWidthValue">10</span>
       </div>
+      <div class="control-group">
+        <label>色:</label>
+        <div class="color-palette" id="colorPalette"></div>
+      </div>
     </div>
   </main>
   
@@ -100,8 +129,23 @@ let lastY = 0;
 let rotation = 0;
 let rotationSpeed = 0.05; // 初期回転速度（1 * 0.05）
 let lineWidth = 10; // 初期線の太さ
+let currentColor = "#333"; // 初期色
 
-// 描画パスを保存する配列（線の太さも保存）
+// カラーパレット
+const colors = [
+  "#333333", // ブラック
+  "#E74C3C", // レッド
+  "#E67E22", // オレンジ
+  "#F39C12", // イエロー
+  "#2ECC71", // グリーン
+  "#3498DB", // ブルー
+  "#9B59B6", // パープル
+  "#E91E63", // ピンク
+  "#1ABC9C", // ターコイズ
+  "#95A5A6"  // グレー
+];
+
+// 描画パスを保存する配列（線の太さと色も保存）
 const paths = [];
 let currentPath = [];
 
@@ -124,6 +168,24 @@ lineWidthSlider.addEventListener("input", (e) => {
   const value = parseInt(e.target.value);
   lineWidthValue.textContent = value;
   lineWidth = value;
+});
+
+// カラーパレットを作成
+const colorPalette = document.getElementById("colorPalette");
+colors.forEach((color, index) => {
+  const button = document.createElement("div");
+  button.className = "color-button" + (index === 0 ? " active" : "");
+  button.style.backgroundColor = color;
+  button.addEventListener("click", () => {
+    // すべてのボタンからactiveクラスを削除
+    document.querySelectorAll(".color-button").forEach(btn => {
+      btn.classList.remove("active");
+    });
+    // クリックされたボタンにactiveクラスを追加
+    button.classList.add("active");
+    currentColor = color;
+  });
+  colorPalette.appendChild(button);
 });
 
 // 座標取得（マウスとタッチ両対応）
@@ -175,7 +237,8 @@ function startDrawing(e) {
   lastY = pos.y;
   currentPath = {
     points: [{ x: original.x, y: original.y }],
-    lineWidth: lineWidth
+    lineWidth: lineWidth,
+    color: currentColor
   };
   e.preventDefault();
 }
@@ -198,7 +261,7 @@ function drawLine(e) {
 function stopDrawing() {
   if (isDrawing && currentPath.points && currentPath.points.length > 0) {
     paths.push({ ...currentPath, points: [...currentPath.points] });
-    currentPath = { points: [], lineWidth: lineWidth };
+    currentPath = { points: [], lineWidth: lineWidth, color: currentColor };
   }
   isDrawing = false;
   currentMousePos = null;
@@ -228,13 +291,13 @@ function animate() {
   ctx.rotate(rotation); // 回転
   ctx.translate(-150, -150); // 元に戻す
 
-  ctx.strokeStyle = "#333";
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
 
   // 保存されたパスを描画
   paths.forEach(path => {
     if (path.points && path.points.length > 1) {
+      ctx.strokeStyle = path.color;
       ctx.lineWidth = path.lineWidth;
       ctx.beginPath();
       ctx.moveTo(path.points[0].x, path.points[0].y);
@@ -247,6 +310,7 @@ function animate() {
 
   // 現在描画中のパスを描画
   if (currentPath.points && currentPath.points.length > 1) {
+    ctx.strokeStyle = currentPath.color;
     ctx.lineWidth = currentPath.lineWidth;
     ctx.beginPath();
     ctx.moveTo(currentPath.points[0].x, currentPath.points[0].y);
