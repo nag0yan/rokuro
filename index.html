@@ -162,10 +162,14 @@ function getOriginalPosition(x, y) {
   return { x: originalX, y: originalY };
 }
 
+// 現在のマウス/タッチ位置を保存
+let currentMousePos = null;
+
 // 描画開始
 function startDrawing(e) {
   isDrawing = true;
   const pos = getPosition(e);
+  currentMousePos = pos;
   const original = getOriginalPosition(pos.x, pos.y);
   lastX = pos.x;
   lastY = pos.y;
@@ -181,6 +185,7 @@ function drawLine(e) {
   if (!isDrawing) return;
 
   const pos = getPosition(e);
+  currentMousePos = pos;
   const original = getOriginalPosition(pos.x, pos.y);
   currentPath.points.push({ x: original.x, y: original.y });
 
@@ -196,10 +201,17 @@ function stopDrawing() {
     currentPath = { points: [], lineWidth: lineWidth };
   }
   isDrawing = false;
+  currentMousePos = null;
 }
 
 // アニメーションループ
 function animate() {
+  // マウスが押されたままで回転している場合、新しい点を追加
+  if (isDrawing && currentMousePos && rotationSpeed !== 0) {
+    const original = getOriginalPosition(currentMousePos.x, currentMousePos.y);
+    currentPath.points.push({ x: original.x, y: original.y });
+  }
+
   // 背景をクリア
   ctx.fillStyle = "white";
   ctx.fillRect(0, 0, 300, 300);
