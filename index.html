@@ -49,24 +49,75 @@
 </body>
 
 <script>
-function init() {
-  window.requestAnimationFrame(draw);
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+let isDrawing = false;
+let lastX = 0;
+let lastY = 0;
+
+// 初期背景を白で塗りつぶし
+ctx.fillStyle = "white";
+ctx.fillRect(0, 0, 300, 300);
+
+// 円を描画
+ctx.beginPath();
+ctx.arc(150, 150, 100, 0, Math.PI * 2);
+ctx.fillStyle = "#FFB6C1";
+ctx.fill();
+
+// 描画設定
+ctx.strokeStyle = "#333";
+ctx.lineWidth = 2;
+ctx.lineCap = "round";
+ctx.lineJoin = "round";
+
+// 座標取得（マウスとタッチ両対応）
+function getPosition(e) {
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+  const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+  return { x, y };
 }
 
-function draw() {
-  const ctx = document.getElementById("canvas").getContext("2d");
+// 描画開始
+function startDrawing(e) {
+  isDrawing = true;
+  const pos = getPosition(e);
+  lastX = pos.x;
+  lastY = pos.y;
+  e.preventDefault();
+}
 
-  ctx.globalCompositeOperation = "destination-over";
-  ctx.clearRect(0, 0, 300, 300);
+// 描画中
+function draw(e) {
+  if (!isDrawing) return;
 
-  // 円を描画
+  const pos = getPosition(e);
+
   ctx.beginPath();
-  ctx.arc(150, 150, 100, 0, Math.PI * 2);
-  ctx.fillStyle = "#FFB6C1";
-  ctx.fill();
+  ctx.moveTo(lastX, lastY);
+  ctx.lineTo(pos.x, pos.y);
+  ctx.stroke();
 
-  window.requestAnimationFrame(draw);
+  lastX = pos.x;
+  lastY = pos.y;
+  e.preventDefault();
 }
 
-init();
+// 描画終了
+function stopDrawing() {
+  isDrawing = false;
+}
+
+// マウスイベント
+canvas.addEventListener("mousedown", startDrawing);
+canvas.addEventListener("mousemove", draw);
+canvas.addEventListener("mouseup", stopDrawing);
+canvas.addEventListener("mouseout", stopDrawing);
+
+// タッチイベント（モバイル対応）
+canvas.addEventListener("touchstart", startDrawing);
+canvas.addEventListener("touchmove", draw);
+canvas.addEventListener("touchend", stopDrawing);
 </script>
