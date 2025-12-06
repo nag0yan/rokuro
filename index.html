@@ -38,12 +38,49 @@
         border-radius: 8px;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       }
+
+      .controls {
+        margin-top: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .control-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      label {
+        font-size: 14px;
+        color: #666;
+      }
+
+      input[type="range"] {
+        width: 200px;
+      }
+
+      .speed-value {
+        min-width: 40px;
+        text-align: center;
+        font-size: 14px;
+        color: #333;
+      }
     </style>
 </head>
 <body>
   <main>
     <h1>rokuro</h1>
     <canvas id="canvas" width="300" height="300"></canvas>
+    <div class="controls">
+      <div class="control-group">
+        <label for="speed">回転速度:</label>
+        <input type="range" id="speed" min="0" max="50" value="0" step="1">
+        <span class="speed-value" id="speedValue">0</span>
+      </div>
+    </div>
   </main>
   
 </body>
@@ -56,10 +93,22 @@ let isDrawing = false;
 let lastX = 0;
 let lastY = 0;
 let rotation = 0;
+let rotationSpeed = 0; // 初期回転速度（停止状態）
 
 // 描画パスを保存する配列
 const paths = [];
 let currentPath = [];
+
+// スライダーのイベントリスナー
+const speedSlider = document.getElementById("speed");
+const speedValue = document.getElementById("speedValue");
+
+speedSlider.addEventListener("input", (e) => {
+  const value = parseInt(e.target.value);
+  speedValue.textContent = value;
+  rotationSpeed = value * 0.05; // 0-2.5の範囲に変換
+  console.log("Speed changed to:", value, "rotationSpeed:", rotationSpeed);
+});
 
 // 座標取得（マウスとタッチ両対応）
 function getPosition(e) {
@@ -177,8 +226,8 @@ function animate() {
 
   ctx.restore();
 
-  // 回転を更新（0.01ラジアン/フレーム）
-  rotation += 0.01;
+  // 回転を更新
+  rotation += rotationSpeed;
 
   requestAnimationFrame(animate);
 }
