@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>rokuro</title>
+    <script src="gif.js"></script>
     <style>
       * {
         margin: 0;
@@ -93,6 +94,27 @@
         border-color: #333;
         transform: scale(1.15);
       }
+
+      .gif-button {
+        margin-top: 10px;
+        padding: 8px 20px;
+        background-color: #9B59B6;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background-color 0.2s;
+      }
+
+      .gif-button:hover {
+        background-color: #8E44AD;
+      }
+
+      .gif-button:disabled {
+        background-color: #BDC3C7;
+        cursor: not-allowed;
+      }
     </style>
 </head>
 <body>
@@ -114,6 +136,7 @@
         <label>色:</label>
         <div class="color-palette" id="colorPalette"></div>
       </div>
+      <button class="gif-button" id="gifButton">GIF録画開始</button>
     </div>
   </main>
   
@@ -186,6 +209,44 @@ colors.forEach((color, index) => {
     currentColor = color;
   });
   colorPalette.appendChild(button);
+});
+
+// GIF録画機能
+let gif = null;
+let isRecording = false;
+let frameCount = 0;
+const maxFrames = 150; // 約5秒（30fps）
+
+const gifButton = document.getElementById("gifButton");
+gifButton.addEventListener("click", () => {
+  if (!isRecording) {
+    // 録画開始
+    isRecording = true;
+    frameCount = 0;
+    gifButton.textContent = "録画中...";
+    gifButton.disabled = true;
+
+    gif = new GIF({
+      workers: 2,
+      quality: 10,
+      width: canvas.width,
+      height: canvas.height,
+      workerScript: 'gif.worker.js'
+    });
+
+    gif.on('finished', (blob) => {
+      // GIFをダウンロード
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'rokuro.gif';
+      a.click();
+      URL.revokeObjectURL(url);
+
+      gifButton.textContent = "GIF録画開始";
+      gifButton.disabled = false;
+    });
+  }
 });
 
 // 座標取得（マウスとタッチ両対応）
@@ -321,6 +382,19 @@ function animate() {
   }
 
   ctx.restore();
+
+  // GIF録画中の場合、フレームを追加
+  if (isRecording) {
+    gif.addFrame(canvas, {copy: true, delay: 33}); // 約30fps
+    frameCount++;
+
+    if (frameCount >= maxFrames) {
+      // 録画終了
+      isRecording = false;
+      gifButton.textContent = "GIF生成中...";
+      gif.render();
+    }
+  }
 
   // 回転を更新
   rotation += rotationSpeed;
